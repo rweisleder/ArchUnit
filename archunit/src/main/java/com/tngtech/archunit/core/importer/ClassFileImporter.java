@@ -245,10 +245,41 @@ public final class ClassFileImporter {
      * <br><br>
      * For information about the impact of the imported classes on the evaluation of rules,
      * as well as configuration and details, refer to {@link ClassFileImporter}.
+     *
+     * @deprecated use {@link #importAllClasses()} instead
      */
+    @Deprecated
     @PublicAPI(usage = ACCESS)
     public JavaClasses importClasspath() {
-        return importClasspath(new ImportOptions().with(ImportOption.Predefined.DO_NOT_INCLUDE_ARCHIVES));
+        return importAllClasses();
+    }
+
+    /**
+     * Imports classes from the whole classpath without archives (JARs or JRTs).
+     * <br><br>
+     * For information about the impact of the imported classes on the evaluation of rules,
+     * as well as configuration and details, refer to {@link ClassFileImporter}.
+     */
+    @PublicAPI(usage = ACCESS)
+    public JavaClasses importAllClasses() {
+        return withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_ARCHIVES).importEntireClasspath();
+    }
+
+    /**
+     * Imports classes from the whole classpath considering the supplied {@link ImportOptions}.<br>
+     * Note that ArchUnit does not distinguish between the classpath and the modulepath for Java &gt;= 9,
+     * thus all classes from the classpath or the modulepath will be considered.
+     * <br><br>
+     * For information about the impact of the imported classes on the evaluation of rules,
+     * as well as configuration and details, refer to {@link ClassFileImporter}.
+     *
+     * @deprecated use {@link #ClassFileImporter(ImportOptions)} or {@link #withImportOption(ImportOption)}
+     * and {@link #importEntireClasspath()} instead
+     */
+    @Deprecated
+    @PublicAPI(usage = ACCESS)
+    public JavaClasses importClasspath(ImportOptions options) {
+        return new ClassFileImporter(options).importEntireClasspath();
     }
 
     /**
@@ -260,8 +291,8 @@ public final class ClassFileImporter {
      * as well as configuration and details, refer to {@link ClassFileImporter}.
      */
     @PublicAPI(usage = ACCESS)
-    public JavaClasses importClasspath(ImportOptions options) {
-        return new ClassFileImporter(options).importLocations(Locations.inClassPath());
+    public JavaClasses importEntireClasspath() {
+        return importLocations(Locations.inClassPath());
     }
 
     /**

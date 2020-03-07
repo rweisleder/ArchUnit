@@ -27,6 +27,31 @@ public class ClassFileImporterSlowTest {
     @Rule
     public final TransientCopyRule copyRule = new TransientCopyRule();
 
+    private final ImportOption javaBase = new ImportOption() {
+        @Override
+        public boolean includes(Location location) {
+            return location.asURI().getScheme().equals("jrt") &&
+                    location.contains("java.base"); // Only import the base jdk classes
+        }
+    };
+
+    @Test
+    public void imports_all_classes() {
+        JavaClasses classes = new ClassFileImporter().importAllClasses();
+
+        assertThatClasses(classes).contain(ClassFileImporter.class, getClass()); // our own classes
+        assertThatClasses(classes).doNotContain(Test.class, ImmutableList.class); // classes from jars
+        assertThatClasses(classes).doNotContain(String.class, Object.class);// classes from java.base
+    }
+
+    @Test
+    public void imports_all_classes_with_import_options() {
+        JavaClasses classes = new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS).importAllClasses();
+
+        assertThatClasses(classes).contain(ClassFileImporter.class); // our own main class
+        assertThatClasses(classes).doNotContain(getClass()); // our own test class
+    }
+
     @Test
     public void imports_the_classpath() {
         JavaClasses classes = new ClassFileImporter().importClasspath();
@@ -38,6 +63,24 @@ public class ClassFileImporterSlowTest {
 
         assertThatClasses(javaBaseClasses).contain(String.class, Annotation.class);
         assertThatClasses(javaBaseClasses).doNotContain(ClassFileImporter.class, getClass(), Rule.class);
+    }
+
+    @Test
+    public void imports_entire_classpath() {
+        JavaClasses classes = new ClassFileImporter().importEntireClasspath();
+
+        assertThatClasses(classes).contain(ClassFileImporter.class, getClass()); // our own classes
+        assertThatClasses(classes).contain(Test.class, ImmutableList.class); // classes from jars
+        assertThatClasses(classes).contain(String.class, Object.class); // classes from java.base
+    }
+
+    @Test
+    public void imports_entire_classpath_with_import_options() {
+        JavaClasses classes = new ClassFileImporter().withImportOption(javaBase).importEntireClasspath();
+
+        assertThatClasses(classes).doNotContain(Test.class, ImmutableList.class); // classes from jars
+        assertThatClasses(classes).doNotContain(ClassFileImporter.class, getClass()); // our own classes
+        assertThatClasses(classes).contain(String.class, Object.class); // classes from java.base
     }
 
     @Test
@@ -107,12 +150,6 @@ public class ClassFileImporterSlowTest {
     }
 
     private JavaClasses importJavaBase() {
-        return new ClassFileImporter().importClasspath(new ImportOptions().with(new ImportOption() {
-            @Override
-            public boolean includes(Location location) {
-                return location.asURI().getScheme().equals("jrt") &&
-                        location.contains("java.base"); // Only import the base jdk classes
-            }
-        }));
+        return new ClassFileImporter().importClasspath(new ImportOptions().with(javaBase));
     }
 }
